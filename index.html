@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hypertension Prediction</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gray-100 flex items-center justify-center">
+
+  <div class="bg-white w-full max-w-2xl p-8 rounded-xl shadow-lg">
+    <h1 class="text-2xl font-bold text-center mb-6 text-indigo-600">
+      Hypertension Prediction
+    </h1>
+
+    <form id="predictForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      <select name="gender" class="p-2 border rounded" required>
+        <option value="">Gender</option>
+        <option value="0">Male</option>
+        <option value="1">Female</option>
+      </select>
+
+      <input name="age" type="number" min="18" max="89" placeholder="Age (18–89)" class="p-2 border rounded" required />
+
+      <select name="family_history" class="p-2 border rounded" required>
+        <option value="">Family History</option>
+        <option value="0">No</option>
+        <option value="1">Yes</option>
+      </select>
+
+      <select name="diabetes" class="p-2 border rounded" required>
+        <option value="">Diabetes</option>
+        <option value="0">No</option>
+        <option value="1">Yes</option>
+      </select>
+
+      <select name="smoking_status" class="p-2 border rounded" required>
+        <option value="">Smoking Status</option>
+        <option value="0">Never</option>
+        <option value="1">Former</option>
+        <option value="2">Current</option>
+      </select>
+
+      <select name="activity_level" class="p-2 border rounded" required>
+        <option value="">Physical Activity</option>
+        <option value="0">Low</option>
+        <option value="1">Moderate</option>
+        <option value="2">High</option>
+      </select>
+
+      <input name="salt_intake" type="number" step="0.1" min="2" max="15" placeholder="Salt Intake (grams/day, 2–15)" class="p-2 border rounded" required />
+
+      <input name="stress_score" type="number" min="1" max="9" placeholder="Stress Score (1–9)" class="p-2 border rounded" required />
+
+      <input name="sleep_duration" type="number" step="0.1" min="4" max="10" placeholder="Sleep Duration (hours, 4–10)" class="p-2 border rounded" required />
+
+      <input name="bmi" type="number" step="0.1" min="15" max="40" placeholder="BMI (15–40)" class="p-2 border rounded" required />
+
+      <input name="systolic" type="number" min="90" max="179" placeholder="Systolic BP (90–179)" class="p-2 border rounded" required />
+
+      <input name="diastolic" type="number" min="60" max="119" placeholder="Diastolic BP (60–119)" class="p-2 border rounded" required />
+
+      <button
+        type="submit"
+        class="md:col-span-2 bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 font-semibold">
+        Predict
+      </button>
+    </form>
+
+    <div id="resultBox" class="mt-6 text-center"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById("predictForm");
+    const resultBox = document.getElementById("resultBox");
+    const val = (n) => form.querySelector(`[name="${n}"]`).value;
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const data = {
+        gender: parseInt(val("gender")),
+        age: parseInt(val("age")),
+        family_history: parseInt(val("family_history")),
+        diabetes: parseInt(val("diabetes")),
+        smoking_status: parseInt(val("smoking_status")),
+        activity_level: parseInt(val("activity_level")),
+        salt_intake: parseFloat(val("salt_intake")),
+        stress_score: parseFloat(val("stress_score")),
+        sleep_duration: parseFloat(val("sleep_duration")),
+        bmi: parseFloat(val("bmi")),
+        systolic: parseInt(val("systolic")),
+        diastolic: parseInt(val("diastolic")),
+      };
+
+      try {
+        const res = await fetch("http://127.0.0.1:8000/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || "Server error " + res.status);
+
+        const high = json.stage.startsWith("High");
+        const c = high ? "red" : "green";
+        resultBox.innerHTML = `
+          <div class="p-4 rounded bg-${c}-100 border border-${c}-400 text-${c}-800 font-semibold">
+            Prediction: ${json.stage}<br>
+            Confidence: ${json.confidence}%
+          </div>
+        `;
+      } catch (err) {
+        resultBox.innerHTML = `
+          <div class="p-4 rounded bg-red-100 border border-red-400 text-red-800 font-semibold">
+            API Error – is FastAPI running? (${err.message})
+          </div>
+        `;
+        console.error(err);
+      }
+    });
+  </script>
+
+</body>
+</html>
